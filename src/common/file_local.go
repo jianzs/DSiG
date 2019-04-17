@@ -8,7 +8,9 @@ import (
 )
 
 func ReadFile(filename string) (string, error) {
-	filename = constant.FILE_PREFIX + filename
+	if filename[0] != '/' {
+		filename = constant.FILE_PREFIX + filename
+	}
 	file, err := os.Open(filename)
 	defer file.Close()
 	if err != nil {
@@ -23,7 +25,9 @@ func ReadFile(filename string) (string, error) {
 }
 
 func WriteFile(filename string, content string) error {
-	filename = constant.FILE_PREFIX + filename
+	if filename[0] != '/' {
+		filename = constant.FILE_PREFIX + filename
+	}
 	err := ensureParentDir(filename)
 	if err != nil {
 		return err
@@ -44,7 +48,9 @@ func WriteFile(filename string, content string) error {
 }
 
 func AppendFile(filename string, content string) error {
-	filename = constant.FILE_PREFIX + filename
+	if filename[0] != '/' {
+		filename = constant.FILE_PREFIX + filename
+	}
 	err := ensureParentDir(filename)
 	if err != nil {
 		return err
@@ -59,6 +65,20 @@ func AppendFile(filename string, content string) error {
 	_, err = outFile.Write([]byte(content))
 	outFile.Write([]byte{'\n'})
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// removeFile is a simple wrapper around os.Remove that logs errors.
+func RemoveFile(filename string) error {
+	if filename[0] != '/' {
+		filename = constant.FILE_PREFIX + filename
+	}
+	err := os.Remove(filename)
+	if err == os.ErrNotExist {
+		return nil
+	} else if err != nil {
 		return err
 	}
 	return nil

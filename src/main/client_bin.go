@@ -2,6 +2,7 @@ package main
 
 import (
 	"common"
+	"constant"
 	"file"
 	"fmt"
 	"mapreduce"
@@ -9,7 +10,7 @@ import (
 )
 
 func main() {
-	kp := file.NewKeeper()
+	kp := file.NewKeeper(constant.CLIENT_FILE_RPC)
 	err := kp.StartRPCServer()
 	if err != nil {
 		common.Debug("File Keeper: Started Failed %s", err)

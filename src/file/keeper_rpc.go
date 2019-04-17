@@ -12,7 +12,7 @@ func (kp *Keeper) StartRPCServer() error {
 	server.Register(kp)
 	server.HandleHTTP(constant.KEEPER_PRC_PATH, constant.KEEPER_DEBUG_PATH)
 
-	l, err := net.Listen("tcp", common.ListenPort(constant.FILE_RPC))
+	l, err := net.Listen("tcp", common.ListenPort(kp.port))
 	if err != nil {
 		return err
 	}

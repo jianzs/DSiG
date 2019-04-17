@@ -24,6 +24,7 @@ func NewMaster() (mr *Master) {
 	mr = new(Master)
 	mr.doneChannel = make(chan bool)
 	mr.newCond = sync.NewCond(mr)
+	mr.jobs = make(map[string]*Job)
 	mr.ExitChannel = make(chan struct{})
 	return
 }

@@ -34,6 +34,8 @@ func (mr *Master) schedule(job common.Job) error {
 	if err != nil {
 		return err
 	}
+	common.Debug("Master: Merge Output file successfully")
+	common.Debug("Master: %s done successfully", job.Name)
 
 	return nil
 }

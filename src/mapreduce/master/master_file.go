@@ -2,7 +2,7 @@ package master
 
 import (
 	"common"
-	"os"
+	"constant"
 )
 
 func (mr *Master) ReadFile(args *common.FileArgs, reply *common.FileReply) error {
@@ -33,11 +33,11 @@ func (mr *Master) mergeFiles(jobName string) error {
 	job := mr.jobs[jobName]
 
 	for idx, wk := range job.reduceWorker {
-		data, err := common.ReadFileRemote(wk.address, common.ReduceName(jobName, idx))
+		data, err := common.ReadFileRemote(common.SrvAddr(wk.address, constant.WORKER_FILE_RPC), common.ReduceName(jobName, idx))
 		if err != nil {
 			return err
 		}
-		err = common.AppendFileRemote(job.client, common.FinalName(jobName, job.job.OutFile), data)
+		err = common.AppendFileRemote(common.SrvAddr(job.client, constant.CLIENT_FILE_RPC), common.FinalName(jobName, job.job.OutFile), data)
 		if err != nil {
 			return err
 		}
@@ -46,23 +46,15 @@ func (mr *Master) mergeFiles(jobName string) error {
 }
 
 func (mr *Master) CleanupFiles(job common.Job) {
+	mapWks := mr.jobs[job.Name].mapWorkers
+	redWks := mr.jobs[job.Name].reduceWorker
+
 	for i := 0; i < job.NMap; i++ {
 		for j := 0; j < job.NReduce; j++ {
-			removeFile(common.IntermediateName(job.Name, i, j))
+			common.RemoveFileRemote(common.SrvAddr(mapWks[i].address, constant.WORKER_FILE_RPC), common.IntermediateName(job.Name, i, j))
 		}
 	}
 	for i := 0; i < job.NReduce; i++ {
-		removeFile(common.ReduceName(job.Name, i))
+		common.RemoveFileRemote(common.SrvAddr(redWks[i].address, constant.WORKER_FILE_RPC), common.ReduceName(job.Name, i))
 	}
-}
-
-// removeFile is a simple wrapper around os.Remove that logs errors.
-func removeFile(n string) error {
-	err := os.Remove(n)
-	if err == os.ErrNotExist {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	return nil
 }

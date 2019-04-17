@@ -13,8 +13,8 @@ func (wk *Worker) DoTask(args *common.DoTaskArgs, reply *common.DoTaskReply) err
 	common.Debug("Worker: Receive %s#%d", args.Phase, args.TaskId)
 
 	jobName := args.JobName
-	executorFile := common.ExecutorFile(jobName)
-	logFileName := common.ExecutorLogFile(jobName, args.Phase, args.TaskId)
+	executorFile := constant.FILE_PREFIX + common.ExecutorFile(jobName)
+	logFileName := constant.FILE_PREFIX + common.ExecutorLogFile(jobName, args.Phase, args.TaskId)
 
 	// 保证Executor存在
 	err := ensureExecutor(executorFile, wk.master, reply)
@@ -88,7 +88,7 @@ func startExecutor(mr, executorFile, logName string, reply *common.DoTaskReply) 
 func ensureExecutor(executorFile string, mr string, reply *common.DoTaskReply) error {
 	if !common.Exists(executorFile) {
 		common.Debug("Worker: Get Func File")
-		content, err := common.ReadFileRemote(mr, executorFile)
+		content, err := common.ReadFileRemote(common.SrvAddr(mr, constant.MASTER_FILE_RPC), executorFile)
 		if err != nil {
 			reply.Code = constant.READ_ERROR
 			reply.Error = err

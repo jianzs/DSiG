@@ -100,7 +100,7 @@ func doMap(jobName, mr string, id, nReduce int, filename string,
 		reply.Err = err
 		return err
 	}
-	data, err := common.ReadFileRemote(client, filename)
+	data, err := common.ReadFileRemote(common.SrvAddr(client, constant.CLIENT_FILE_RPC), filename)
 	if err != nil {
 		common.Debug("Executor: Read file failed %s", err)
 		reply.Code = constant.READ_ERROR
@@ -160,7 +160,7 @@ func ihash(s string) int {
 func getClient(mr, jobName string) (string, error) {
 	args := common.GetClientArgs{JobName: jobName}
 	var reply common.GetClientReply
-	err := common.Call(mr, constant.GET_CLIENT, args, reply)
+	err := common.Call(common.SrvAddr(mr, constant.MASTER_RPC), constant.GET_CLIENT, args, &reply)
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +170,7 @@ func getClient(mr, jobName string) (string, error) {
 func getMapWorker(mr, jobName string) ([]string, error) {
 	args := common.GetMapWkArgs{jobName}
 	var reply common.GetMapWkReply
-	err := common.Call(mr, constant.GET_MAP_WORKERS, args, reply)
+	err := common.Call(common.SrvAddr(mr, constant.MASTER_RPC), constant.GET_MAP_WORKERS, args, &reply)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func doReduce(jobName, mr string, id, nMap int,
 	kvs := make([]common.KeyValue, 0)
 	for i := 0; i < nMap; i++ {
 		itmdName := common.IntermediateName(jobName, i, id)
-		content, err := common.ReadFileRemote(wks[i], itmdName)
+		content, err := common.ReadFileRemote(common.SrvAddr(wks[i], constant.WORKER_FILE_RPC), itmdName)
 		if err != nil {
 			common.Debug("Executor: Read file %s failed, error %s", itmdName, err)
 			reply.Code = constant.READ_ERROR

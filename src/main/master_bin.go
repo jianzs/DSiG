@@ -2,6 +2,7 @@ package main
 
 import (
 	"common"
+	"constant"
 	"file"
 	"mapreduce/master"
 )
@@ -15,7 +16,7 @@ func main() {
 		return
 	}
 
-	kp := file.NewKeeper()
+	kp := file.NewKeeper(constant.MASTER_FILE_RPC)
 	err = kp.StartRPCServer()
 	if err != nil {
 		common.Debug("File Keeper: Started Failed %s", err)

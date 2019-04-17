@@ -7,14 +7,21 @@
 2. 用户可多次提交`Job`。
 3. 用户可自定义`Map`和`Reduce`函数。通过改写`main/executor_bin_example.bin`中的`MapFunc`和`ReduceFunc`。
 
+用户在不同节点提交Executor。将Executor文件的内容submit给Master。
+Master对Worker调度分发任务，Worker执行Map任务时，向Master询问该任务的Client的IP，通过RPC获得文件，执行Reduce任务时，和所有Worker通信，获得相应ReduceId的文件。
+
+每个角色创建文件管家Keeper负责接受RPC文件读写操作。
+
+各个角色远程读取和写入文件时，是使用相对路径传输文件名。正式写入和读取时，在相对路径前加上配置文件中配置的文件前缀，构成绝对路径，完成文件操作。
+
 ## 缺点
-1. 只能在Master节点创建Client提交。
-2. 文件都存在Master上。
-3. Worker执行任务都是对Master上的文件进行读取和写入。
-4. 输入文件只能使用绝对路径
+1. ~~只能在Master节点创建Client提交。~~
+2. ~~文件都存在Master上。~~
+3. ~~Worker执行任务都是对Master上的文件进行读取和写入。~~
+4. ~~输入文件只能使用绝对路径~~
 
 ## 计划
-1. Worker与Client直接连接。
+1. ~~Worker与Client直接连接。~~
 2. 设计失败反馈。
 3. 设计心跳，增强容错。
 
