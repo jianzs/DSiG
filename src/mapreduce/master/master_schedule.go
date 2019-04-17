@@ -1,4 +1,4 @@
-package mapreduce
+package master
 
 import (
 	"common"
@@ -108,7 +108,7 @@ func forwardRegistrations(mr *Master, ch chan string) {
 	for {
 		mr.Lock()
 		if i < len(mr.workers) {
-			ch <- mr.workers[i]
+			ch <- mr.workers[i].address
 			i++
 		} else {
 			mr.newCond.Wait()
