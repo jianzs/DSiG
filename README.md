@@ -2,6 +2,9 @@
 
 使用Go语言实现一个简单的MapReduce分布式系统
 
+## Architecture
+![Architecture](http://xsj.zhengsj.top/小书匠/2019年4月17日-20194171555499466079.png)
+
 ## 功能
 1. Master, Worker 单独启动。
 2. 用户可多次提交`Job`。
