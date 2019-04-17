@@ -69,18 +69,17 @@ func (exe *Executor) StopRPCServer() {
 func (exe *Executor) DoTask(args *common.DoTaskArgs, reply *common.ExecuteReply) error {
 	id := args.TaskId
 	jobName := args.JobName
-	timestamp := args.Timestamp
 	nOther := args.NOther
 	common.Debug("Executor: Receive %s#%d ", args.Phase, id)
 
 	switch args.Phase {
 	case constant.MAP_PHASE:
-		err := doMap(jobName, timestamp, exe.master, id, nOther, args.Filename, MapFunc, reply)
+		err := doMap(jobName, exe.master, id, nOther, args.Filename, MapFunc, reply)
 		if err != nil {
 			return err
 		}
 	case constant.REDUCE_PHASE:
-		err := doReduce(jobName, timestamp, exe.master, id, nOther, ReduceFunc, reply)
+		err := doReduce(jobName, exe.master, id, nOther, ReduceFunc, reply)
 		if err != nil {
 			return err
 		}
@@ -90,12 +89,18 @@ func (exe *Executor) DoTask(args *common.DoTaskArgs, reply *common.ExecuteReply)
 	return nil
 }
 
-func doMap(jobName, timestamp, mr string, id, nReduce int, filename string,
+func doMap(jobName, mr string, id, nReduce int, filename string,
 	mapFunc func(string, string) []common.KeyValue,
 	reply *common.ExecuteReply) error {
 
 	// Read file
-	data, err := common.ReadFileFrMaster(mr, filename)
+	client, err := getClient(mr, jobName)
+	if err != nil {
+		reply.Code = constant.OTHER_ERROR
+		reply.Err = err
+		return err
+	}
+	data, err := common.ReadFileRemote(client, filename)
 	if err != nil {
 		common.Debug("Executor: Read file failed %s", err)
 		reply.Code = constant.READ_ERROR
@@ -130,9 +135,9 @@ func doMap(jobName, timestamp, mr string, id, nReduce int, filename string,
 			return err
 		}
 
-		itmdName := common.IntermediateName(jobName, timestamp, id, i)
+		itmdName := common.IntermediateName(jobName, id, i)
 
-		err = common.WriteFileToMaster(mr, itmdName, json)
+		err = common.WriteFile(itmdName, json)
 		if err != nil {
 			common.Debug("Executor: Write file %s, error %s", itmdName, err)
 			reply.Code = constant.WRITE_ERROR
@@ -152,15 +157,42 @@ func ihash(s string) int {
 	return int(h.Sum32() & 0x7fffffff)
 }
 
-func doReduce(jobName, timestamp, mr string, id, nMap int,
+func getClient(mr, jobName string) (string, error) {
+	args := common.GetClientArgs{JobName: jobName}
+	var reply common.GetClientReply
+	err := common.Call(mr, constant.GET_CLIENT, args, reply)
+	if err != nil {
+		return "", err
+	}
+	return reply.Client, nil
+}
+
+func getMapWorker(mr, jobName string) ([]string, error) {
+	args := common.GetMapWkArgs{jobName}
+	var reply common.GetMapWkReply
+	err := common.Call(mr, constant.GET_MAP_WORKERS, args, reply)
+	if err != nil {
+		return nil, err
+	}
+	return reply.Workers, nil
+}
+
+func doReduce(jobName, mr string, id, nMap int,
 	redFunc func(string, []string) string,
 	reply *common.ExecuteReply) error {
+	// Get map workers
+	wks, err := getMapWorker(mr, jobName)
+	if err != nil {
+		reply.Err = err
+		reply.Code = constant.OTHER_ERROR
+		return err
+	}
 
 	// Read Intermediate Files
 	kvs := make([]common.KeyValue, 0)
 	for i := 0; i < nMap; i++ {
-		itmdName := common.IntermediateName(jobName, timestamp, i, id)
-		content, err := common.ReadFileFrMaster(mr, itmdName)
+		itmdName := common.IntermediateName(jobName, i, id)
+		content, err := common.ReadFileRemote(wks[i], itmdName)
 		if err != nil {
 			common.Debug("Executor: Read file %s failed, error %s", itmdName, err)
 			reply.Code = constant.READ_ERROR
@@ -214,7 +246,7 @@ func doReduce(jobName, timestamp, mr string, id, nMap int,
 	}
 
 	// Write File
-	err = common.WriteFileToMaster(mr, common.ReduceName(jobName, timestamp, id), jsonstr)
+	err = common.WriteFile(common.ReduceName(jobName, id), jsonstr)
 	if err != nil {
 		common.Debug("Executor: Write file  error %s", err)
 		reply.Code = constant.WRITE_ERROR

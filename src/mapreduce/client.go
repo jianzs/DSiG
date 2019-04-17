@@ -15,7 +15,7 @@ func NewClient(job common.Job, mr string) Client {
 }
 
 func (ct *Client) Submit() error {
-	ct.job.Timestamp = common.GetNowTimestamp()
+	ct.job.Name = ct.job.Name + common.GetNowTimestamp()
 
 	content, err := common.ReadFile(ct.job.FuncFile)
 	if err != nil {
@@ -23,7 +23,7 @@ func (ct *Client) Submit() error {
 	}
 	common.Debug("Client: Read function file successfully")
 
-	err = common.WriteFileToMaster(ct.master, common.ExecutorFile(ct.job.Name, ct.job.Timestamp), content)
+	err = common.WriteFileRemote(ct.master, common.ExecutorFile(ct.job.Name), content)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (ct *Client) Submit() error {
 }
 
 func (ct *Client) GetResult() (content string, err error) {
-	filename := common.FinalName(ct.job.Name, ct.job.Timestamp, ct.job.OutFile)
-	content, err = common.ReadFileFrMaster(ct.master, filename)
+	filename := common.FinalName(ct.job.Name, ct.job.OutFile)
+	content, err = common.ReadFileRemote(ct.master, filename)
 	return
 }

@@ -12,7 +12,9 @@ type Master struct {
 
 	// protected by the mutex
 	newCond *sync.Cond // signals when Register() adds to workers[]
-	workers []Worker   // each worker's IP socket address -- its RPC address
+	workers []*Worker  // each worker's IP socket address -- its RPC address
+
+	jobs map[string]*Job
 
 	ExitChannel chan struct{}
 	l           net.Listener

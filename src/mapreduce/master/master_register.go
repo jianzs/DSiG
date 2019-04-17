@@ -13,7 +13,7 @@ func (mr *Master) Register(args *common.RegisterArgs, _ *struct{}) error {
 		}
 	}
 
-	mr.workers = append(mr.workers, *newWorker(args.Worker))
+	mr.workers = append(mr.workers, newWorker(args.Worker))
 	common.Debug("Master: A new worker '%s' join workers successfully", args.Worker)
 	mr.newCond.Broadcast() // 通知正在调度的任务
 

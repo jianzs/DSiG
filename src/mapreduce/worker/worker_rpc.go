@@ -10,7 +10,7 @@ import (
 func (wk *Worker) StartRPCServer() error {
 	server := rpc.NewServer()
 	server.Register(wk)
-	server.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
+	server.HandleHTTP(constant.WORKER_PRC_PATH, constant.WORKER_DEBUG_PATH)
 
 	l, err := net.Listen("tcp", common.ListenPort(constant.WORKER_RPC))
 	if err != nil {

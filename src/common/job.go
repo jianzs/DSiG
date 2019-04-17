@@ -19,7 +19,7 @@ type Job struct {
 
 	FuncFile string
 
-	Timestamp string
+	//Timestamp string
 }
 
 func (b Job) String() string {

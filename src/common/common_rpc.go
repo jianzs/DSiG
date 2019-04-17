@@ -11,12 +11,11 @@ type RegisterArgs struct {
 }
 
 type DoTaskArgs struct {
-	TaskId    int
-	JobName   string
-	NOther    int
-	Filename  string
-	Timestamp string
-	Phase     string
+	TaskId   int
+	JobName  string
+	NOther   int
+	Filename string
+	Phase    string
 }
 
 type DoTaskReply struct {
@@ -29,32 +28,39 @@ type ExecuteReply struct {
 	Err  error
 }
 
-type ReadFileArgs struct {
-	Filename  string
-	JobName   string
-	Timestamp string
-}
-
-type ReadFileReply struct {
+type FileReply struct {
 	Content string
 	Err     error
 }
 
-type WriteFileArgs struct {
+type FileArgs struct {
 	Filename string
 	Content  string
 }
 
-type WriteFileReply struct {
-	Err error
-}
-
 type SubmitJobArgs struct {
-	Job Job
+	Job    Job
+	Client string
 }
 
 type SubmitJobReply struct {
 	Err error
+}
+
+type GetClientArgs struct {
+	JobName string
+}
+
+type GetClientReply struct {
+	Client string
+}
+
+type GetMapWkArgs struct {
+	JobName string
+}
+
+type GetMapWkReply struct {
+	Workers []string
 }
 
 func Call(srv string, rpcname string,

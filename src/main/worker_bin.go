@@ -2,7 +2,8 @@ package main
 
 import (
 	"common"
-	"mapreduce"
+	"file"
+	"mapreduce/worker"
 	"os"
 )
 
@@ -12,11 +13,18 @@ func main() {
 	wkIp := args[1]
 	mr := args[2]
 
-	wk := mapreduce.NewWorker(wkIp)
+	wk := worker.NewWorker(wkIp)
 
 	err := wk.StartRPCServer()
 	if err != nil {
 		common.Debug("Worker: Started Failed %s", err)
+		return
+	}
+
+	kp := file.NewKeeper()
+	err = kp.StartRPCServer()
+	if err != nil {
+		common.Debug("File Keeper: Started Failed %s", err)
 		return
 	}
 

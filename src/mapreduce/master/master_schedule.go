@@ -10,92 +10,27 @@ import (
 func (mr *Master) schedule(job common.Job) error {
 	defer mr.CleanupFiles(job) // 结束后，删除所有中间文件
 
-	ch := make(chan string, 0)
+	// Worker Channel
+	ch := make(chan *Worker, 0)
 	go forwardRegistrations(mr, ch)
 
-	errs := make([]error, 0)
-
+	// Map Task
 	var wg sync.WaitGroup
 	for i := 0; i < job.NMap; i++ {
 		wg.Add(1)
-		go func(i int) {
-			for {
-				wk := <-ch
-
-				common.Debug("Master: Schedule Map#%d to %s", i, wk)
-
-				args := common.DoTaskArgs{i, job.Name,
-					job.NReduce, job.InFiles[i], job.Timestamp, constant.MAP_PHASE}
-				var reply common.DoTaskReply
-				err := common.Call(common.SrvAddr(wk, constant.WORKER_RPC), constant.DO_TASK, args, &reply)
-
-				if err != nil {
-					common.Debug("Master: Worker do map error %s", err)
-					errs = append(errs, err)
-					return
-				}
-
-				if reply.Code != constant.SUCCESS {
-					common.Debug("Master: Worker Do Map Error %s",
-						&TaskError{reply.Code, reply.Error})
-				} else {
-					wg.Done()
-					ch <- wk
-					common.Debug("Master: Schedule Map#%d to %s done successfully", i, wk)
-					break
-				}
-			}
-		}(i)
+		go mr.handOutTask(i, &job, constant.MAP_PHASE, ch, &wg)
 	}
 	wg.Wait()
-	if len(errs) > 0 {
-		return errs[0]
-	}
 
+	// Reduce Task
 	for i := 0; i < job.NReduce; i++ {
 		wg.Add(1)
-		go func(i int) {
-			for {
-				wk := <-ch
-
-				common.Debug("Master: Schedule Reduce#%d to %s", i, wk)
-
-				args := common.DoTaskArgs{i, job.Name, job.NMap,
-					"", job.Timestamp, constant.REDUCE_PHASE}
-				var reply common.DoTaskReply
-
-				err := common.Call(common.SrvAddr(wk, constant.WORKER_RPC), constant.DO_TASK, args, &reply)
-
-				if err != nil {
-					errs = append(errs, err)
-					return
-				}
-
-				if reply.Code != constant.SUCCESS {
-					common.Debug("Worker: Do Reduce Error %s",
-						&TaskError{reply.Code, reply.Error})
-				} else {
-					wg.Done()
-					ch <- wk
-					common.Debug("Master: Schedule Reduce#%d to %s done successfully", i, wk)
-					break
-				}
-			}
-		}(i)
+		go mr.handOutTask(i, &job, constant.REDUCE_PHASE, ch, &wg)
 	}
 	wg.Wait()
 
-	if len(errs) > 0 {
-		return errs[0]
-	}
-
 	// Merge Reduces' result
-	reduceFiles := make([]string, 0)
-	for i := 0; i < job.NReduce; i++ {
-		reduceFiles = append(reduceFiles, common.ReduceName(job.Name, job.Timestamp, i))
-	}
-	outFile := common.FinalName(job.Name, job.Timestamp, job.OutFile)
-	err := mr.mergeFiles(reduceFiles, outFile)
+	err := mr.mergeFiles(job.Name)
 	if err != nil {
 		return err
 	}
@@ -103,12 +38,77 @@ func (mr *Master) schedule(job common.Job) error {
 	return nil
 }
 
-func forwardRegistrations(mr *Master, ch chan string) {
+func (mr *Master) handOutTask(taskId int, job *common.Job,
+	phase string, wkCh chan *Worker, wg *sync.WaitGroup) (*common.DoTaskReply, error) {
+	var nOther int
+
+	switch phase {
+	case constant.MAP_PHASE:
+		nOther = job.NReduce
+	case constant.REDUCE_PHASE:
+		nOther = job.NMap
+	}
+
+	args := common.DoTaskArgs{taskId, job.Name, nOther, job.InFiles[taskId], phase}
+	var reply common.DoTaskReply
+	var err error
+
+	tryCnt := 0
+	for {
+		if tryCnt >= 3 {
+			break
+		}
+		tryCnt++
+
+		// Update worker task info
+		wk := <-wkCh
+		wk.Lock()
+		wk.taskCount++
+		wk.activeTaskNum++
+		wk.Unlock()
+
+		common.Debug("Master: Schedule %s#%d to %s", phase, taskId, wk)
+		err = common.Call(common.SrvAddr(wk.address, constant.WORKER_RPC), constant.DO_TASK, args, &reply)
+
+		if err != nil {
+			common.Debug("Master: Worker do %s error %s", phase, err)
+			continue
+		}
+
+		if reply.Code != constant.SUCCESS {
+			common.Debug("Master: Worker Do %s Error %s",
+				phase, &TaskError{reply.Code, reply.Error})
+			err = reply.Error
+		} else {
+			mr.Lock()
+			switch phase {
+			case constant.MAP_PHASE:
+				mr.jobs[job.Name].mapWorkers[taskId] = wk
+			case constant.REDUCE_PHASE:
+				mr.jobs[job.Name].reduceWorker[taskId] = wk
+			}
+			mr.Unlock()
+
+			wg.Done()
+			wkCh <- wk
+			common.Debug("Master: Schedule %s#%d to %s done successfully", phase, taskId, wk)
+			break
+		}
+	}
+
+	if tryCnt <= 3 {
+		return &reply, nil
+	} else {
+		return nil, err
+	}
+}
+
+func forwardRegistrations(mr *Master, ch chan *Worker) {
 	i := 0
 	for {
 		mr.Lock()
 		if i < len(mr.workers) {
-			ch <- mr.workers[i].address
+			ch <- mr.workers[i]
 			i++
 		} else {
 			mr.newCond.Wait()

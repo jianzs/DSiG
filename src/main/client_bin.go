@@ -2,12 +2,20 @@ package main
 
 import (
 	"common"
+	"file"
 	"fmt"
 	"mapreduce"
 	"os"
 )
 
 func main() {
+	kp := file.NewKeeper()
+	err := kp.StartRPCServer()
+	if err != nil {
+		common.Debug("File Keeper: Started Failed %s", err)
+		return
+	}
+
 	args := os.Args
 	mapRedFile := args[1] + ".go"
 	inFiles := args[2:]
@@ -21,7 +29,7 @@ func main() {
 	job.OutFile = "testOut"
 
 	client := mapreduce.NewClient(job, "127.0.0.1")
-	err := client.Submit()
+	err = client.Submit()
 	if err != nil {
 		fmt.Println(err)
 	} else {

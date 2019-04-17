@@ -12,10 +12,9 @@ import (
 func (wk *Worker) DoTask(args *common.DoTaskArgs, reply *common.DoTaskReply) error {
 	common.Debug("Worker: Receive %s#%d", args.Phase, args.TaskId)
 
-	timestamp := args.Timestamp
 	jobName := args.JobName
-	executorFile := common.ExecutorFile(jobName, timestamp)
-	logFileName := common.ExecutorLogFile(jobName, timestamp, args.Phase, args.TaskId)
+	executorFile := common.ExecutorFile(jobName)
+	logFileName := common.ExecutorLogFile(jobName, args.Phase, args.TaskId)
 
 	// 保证Executor存在
 	err := ensureExecutor(executorFile, wk.master, reply)
@@ -85,10 +84,11 @@ func startExecutor(mr, executorFile, logName string, reply *common.DoTaskReply) 
 	return nil
 }
 
+// 保证Executor存在，如果不存在则去获取
 func ensureExecutor(executorFile string, mr string, reply *common.DoTaskReply) error {
 	if !common.Exists(executorFile) {
 		common.Debug("Worker: Get Func File")
-		content, err := common.ReadFileFrMaster(mr, executorFile)
+		content, err := common.ReadFileRemote(mr, executorFile)
 		if err != nil {
 			reply.Code = constant.READ_ERROR
 			reply.Error = err

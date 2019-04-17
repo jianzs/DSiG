@@ -1,7 +1,5 @@
 package common
 
-// 通用的文件读写操作
-
 import (
 	"constant"
 	"io/ioutil"
@@ -9,39 +7,8 @@ import (
 	"strings"
 )
 
-func ReadFileFrMaster(mr string, filename string) (string, error) {
-	args := ReadFileArgs{Filename: filename}
-	var reply ReadFileReply
-
-	err := Call(SrvAddr(mr, constant.MASTER_RPC), constant.READ_FILE, args, &reply)
-	if err != nil {
-		return "", err
-	}
-
-	if reply.Err != nil {
-		return "", reply.Err
-	}
-
-	return reply.Content, nil
-}
-
-func WriteFileToMaster(mr string, filename string, content string) error {
-	args := WriteFileArgs{filename, content}
-	var reply WriteFileReply
-
-	err := Call(SrvAddr(mr, constant.MASTER_RPC), constant.WRITE_FILE, args, &reply)
-	if err != nil {
-		return err
-	}
-
-	if reply.Err != nil {
-		return reply.Err
-	}
-
-	return nil
-}
-
 func ReadFile(filename string) (string, error) {
+	filename = constant.FILE_PREFIX + filename
 	file, err := os.Open(filename)
 	defer file.Close()
 	if err != nil {
@@ -56,6 +23,7 @@ func ReadFile(filename string) (string, error) {
 }
 
 func WriteFile(filename string, content string) error {
+	filename = constant.FILE_PREFIX + filename
 	err := ensureParentDir(filename)
 	if err != nil {
 		return err
@@ -76,6 +44,7 @@ func WriteFile(filename string, content string) error {
 }
 
 func AppendFile(filename string, content string) error {
+	filename = constant.FILE_PREFIX + filename
 	err := ensureParentDir(filename)
 	if err != nil {
 		return err

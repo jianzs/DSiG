@@ -4,7 +4,6 @@ package common
 
 import (
 	"bytes"
-	"constant"
 	"encoding/json"
 	"io"
 	"strconv"
@@ -21,29 +20,26 @@ func SrvAddr(ip string, port int) string {
 	return ip + ":" + strconv.Itoa(port)
 }
 
-func ExecutorFile(jobName string, timestamp string) string {
-	return constant.FILE_PREFIX + jobName + timestamp + "/main/executor_bin.go"
+func ExecutorFile(jobName string) string {
+	return jobName + "/main/executor_bin.go"
 }
 
-func ExecutorLogFile(jobName, timestamp string, phase string, id int) string {
-	return constant.FILE_PREFIX + jobName + timestamp +
-		"/executor-" + phase + "-" + strconv.Itoa(id) + ".out"
+func ExecutorLogFile(jobName string, phase string, id int) string {
+	return jobName + "/executor-" + phase + "-" + strconv.Itoa(id) + ".out"
 }
 
 // the map's result
-func IntermediateName(jobName string, timestamp string, mapId, redId int) string {
-	return constant.FILE_PREFIX + jobName + timestamp +
-		"/mrtmp." + jobName + "-" + strconv.Itoa(mapId) + "-" + strconv.Itoa(redId)
+func IntermediateName(jobName string, mapId, redId int) string {
+	return jobName + "/mrtmp." + jobName + "-" + strconv.Itoa(mapId) + "-" + strconv.Itoa(redId)
 }
 
 // the reduce's result
-func ReduceName(jobName string, timestamp string, reduceTask int) string {
-	return constant.FILE_PREFIX + jobName + timestamp +
-		"/mrtmp." + jobName + "-res-" + strconv.Itoa(reduceTask)
+func ReduceName(jobName string, reduceTask int) string {
+	return jobName + "/mrtmp." + jobName + "-res-" + strconv.Itoa(reduceTask)
 }
 
-func FinalName(jobName, timestamp, outFile string) string {
-	return constant.FILE_PREFIX + jobName + timestamp + "/" + outFile
+func FinalName(jobName, outFile string) string {
+	return jobName + "/" + outFile
 }
 
 func Encode(kvs []KeyValue) (string, error) {
