@@ -32,6 +32,7 @@ Master对Worker调度分发任务，Worker执行Map任务时，向Master询问�
 修改存放中间文件及结果的目录前缀：修改`src/common_file.go`
 
 ## 启动
+可以通过配置`sbin`目录下的脚本运行
 ### Master
 ```bash
 go run src/main/master_bin.go
@@ -44,7 +45,7 @@ go run src/main/worker_bin.go <local-ip> <master-ip>
 
 ### Client
 ```bash
- go run src/main/client_bin.go <path/to/executor> <absolute/path/to/input/files>
+ go run src/main/client_bin.go <local-ip> <master-ip> <absolute/path/to/executor> <absolute/path/to/input/files>
 ```
 executor的文件名省略最后`.go`后缀，否则go会认为是多go文件执行
 

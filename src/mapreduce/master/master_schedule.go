@@ -73,13 +73,13 @@ func (mr *Master) handOutTask(taskId int, job *common.Job,
 		err = common.Call(common.SrvAddr(wk.address, constant.WORKER_RPC), constant.DO_TASK, args, &reply)
 
 		if err != nil {
-			common.Debug("Master: Worker do %s error %s", phase, err)
+			common.Debug("Master: Worker do %s#%d error %s", phase, taskId, err)
 			continue
 		}
 
 		if reply.Code != constant.SUCCESS {
-			common.Debug("Master: Worker Do %s Error %s",
-				phase, &TaskError{reply.Code, reply.Error})
+			common.Debug("Master: Worker Do %s#%d Error %s",
+				phase, taskId, &TaskError{reply.Code, reply.Error})
 			err = reply.Error
 		} else {
 			mr.Lock()

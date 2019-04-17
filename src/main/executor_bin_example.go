@@ -194,7 +194,7 @@ func doReduce(jobName, mr string, id, nMap int,
 		itmdName := common.IntermediateName(jobName, i, id)
 		content, err := common.ReadFileRemote(common.SrvAddr(wks[i], constant.WORKER_FILE_RPC), itmdName)
 		if err != nil {
-			common.Debug("Executor: Read file %s failed, error %s", itmdName, err)
+			common.Debug("Executor: Read file %s failed from %s, error %s", itmdName, wks[i], err)
 			reply.Code = constant.READ_ERROR
 			reply.Err = err
 			return err

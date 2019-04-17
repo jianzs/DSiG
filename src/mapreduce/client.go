@@ -6,12 +6,13 @@ import (
 )
 
 type Client struct {
-	job    common.Job
-	master string
+	job     common.Job
+	master  string
+	address string
 }
 
-func NewClient(job common.Job, mr string) Client {
-	return Client{job, mr}
+func NewClient(job common.Job, addr, mr string) Client {
+	return Client{job, mr, addr}
 }
 
 func (ct *Client) Submit() error {
@@ -29,15 +30,17 @@ func (ct *Client) Submit() error {
 	}
 	common.Debug("Client: Write File successfully")
 
-	args := common.SubmitJobArgs{Job: ct.job}
+	args := common.SubmitJobArgs{Job: ct.job, Client: ct.address}
 	var reply common.SubmitJobReply
 
 	common.Debug("Client: Start to submit job")
 	err = common.Call(common.SrvAddr(ct.master, constant.MASTER_RPC), constant.SUBMIT_JOB, args, &reply)
 	if err != nil {
+		common.Debug("Client: Job executed successfully RPC %s", err)
 		return err
 	}
 	if reply.Err != nil {
+		common.Debug("Client: Job executed successfully Remote %s", reply.Err)
 		return reply.Err
 	}
 	common.Debug("Client: Job executed successfully")
@@ -47,6 +50,6 @@ func (ct *Client) Submit() error {
 
 func (ct *Client) GetResult() (content string, err error) {
 	filename := common.FinalName(ct.job.Name, ct.job.OutFile)
-	content, err = common.ReadFileRemote(common.SrvAddr(ct.master, constant.MASTER_FILE_RPC), filename)
+	content, err = common.ReadFile(filename)
 	return
 }
